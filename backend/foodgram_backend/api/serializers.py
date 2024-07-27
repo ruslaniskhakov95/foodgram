@@ -2,7 +2,9 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, validators
 
-from .models import Tag, Ingredient, Recipe, RecipeIngredient, RecipeTag
+from .models import (
+    Tag, Ingredient, Recipe, RecipeIngredient, RecipeTag, Favorite
+)
 from users.serializers import Base64ImageField, CustomUserSerializer
 
 
@@ -134,3 +136,23 @@ class RecipeSerializer(serializers.ModelSerializer):
                 recipe=instance, tag_id=current_tag.id
             )
         return instance
+
+
+class RecipeIsFavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Favorite
+        fields = ('user', 'favorite')
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=Favorite.objects.all(),
+                fields=('user', 'favorite')
+            )
+        ]

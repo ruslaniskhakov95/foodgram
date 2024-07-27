@@ -7,10 +7,12 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Tag, Ingredient, Recipe
+from .models import Tag, Ingredient, Recipe, Favorite
 from .serializers import (
-    TagSerializer, IngredientSerializer, RecipeSerializer
+    TagSerializer, IngredientSerializer, RecipeSerializer, FavoriteSerializer,
+    RecipeIsFavoriteSerializer
 )
+from .utils import CreateDestroyViewSet
 
 
 User = get_user_model()
@@ -63,3 +65,36 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(
             {'short-link': short_link}, status=status.HTTP_200_OK
         )
+
+
+class FavoriteViewSet(CreateDestroyViewSet):
+
+    def create(self, request, *args, **kwargs):
+        favorite_id = kwargs.get('pk', None)
+        recipe = get_object_or_404(Recipe, id=favorite_id)
+        if favorite_id:
+            data = {
+                'user': request.user.id,
+                'favorite': favorite_id
+            }
+            serializer = FavoriteSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            recipe_serializer = RecipeIsFavoriteSerializer(recipe)
+            return Response(
+                recipe_serializer.data, status=status.HTTP_201_CREATED
+            )
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        favorite_id = kwargs.get('pk', None)
+        recipe = get_object_or_404(Recipe, id=favorite_id)
+        if favorite_id:
+            favorite = get_object_or_404(
+                Favorite, user=request.user, favorite=recipe
+            )
+            favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)

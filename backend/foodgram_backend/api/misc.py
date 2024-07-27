@@ -77,3 +77,8 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
         )
         instance.ingredients = serializer.data
         return super().to_representation(instance)
+
+# router_api_users.register(
+#    r'users/(?P<subscribing_id>\d+)/subscribe', SubscribeViewSet,
+#    basename='subscribe'
+# )
