@@ -6,8 +6,6 @@ from .views import (
     ShoppingCartViewSet
 )
 
-app_name = 'api'
-
 api_router_v1 = DefaultRouter()
 api_router_v1.register('tags', TagViewSet, basename='tags')
 api_router_v1.register(

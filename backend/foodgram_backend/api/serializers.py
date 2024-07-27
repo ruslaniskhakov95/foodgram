@@ -59,18 +59,38 @@ class TagSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(required=False, read_only=True)
-    author = CustomUserSerializer(default=serializers.CurrentUserDefault())
-    image = Base64ImageField()
     ingredients = IngredientAmountSerializer(many=True)
     tags = TagSerializer(many=True)
+    author = CustomUserSerializer(default=serializers.CurrentUserDefault())
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+    image = Base64ImageField()
     cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = Recipe
         fields = (
-            'id', 'ingredients', 'tags', 'image', 'name',
-            'text', 'cooking_time', 'author'
+            'id', 'ingredients', 'tags', 'author', 'is_favorited',
+            'is_in_shopping_cart', 'image', 'name', 'text', 'cooking_time'
         )
+
+    def get_is_favorited(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return Favorite.objects.filter(
+                user=request.user, favorite=obj
+            ).exists()
+        else:
+            return False
+
+    def get_is_in_shopping_cart(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return ShoppingCart.objects.filter(
+                user=request.user, recipe=obj
+            ).exists()
+        else:
+            return False
 
     def to_internal_value(self, data):
         data['tags'] = [{'id': tag} for tag in data['tags']]

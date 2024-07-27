@@ -66,6 +66,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'short-link': short_link}, status=status.HTTP_200_OK
         )
 
+    @action(
+        methods=['get'], detail=False,
+        url_path='download_shopping_cart'
+    )
+    def get_shopping_cart(self, request):
+        pass
+
 
 class FavoriteViewSet(CreateDestroyViewSet):
 
