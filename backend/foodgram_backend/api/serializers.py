@@ -3,7 +3,8 @@ from django.shortcuts import get_object_or_404
 from rest_framework import serializers, validators
 
 from .models import (
-    Tag, Ingredient, Recipe, RecipeIngredient, RecipeTag, Favorite
+    Tag, Ingredient, Recipe, RecipeIngredient, RecipeTag, Favorite,
+    ShoppingCart
 )
 from users.serializers import Base64ImageField, CustomUserSerializer
 
@@ -154,5 +155,18 @@ class FavoriteSerializer(serializers.ModelSerializer):
             validators.UniqueTogetherValidator(
                 queryset=Favorite.objects.all(),
                 fields=('user', 'favorite')
+            )
+        ]
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=ShoppingCart.objects.all(),
+                fields=('user', 'recipe')
             )
         ]

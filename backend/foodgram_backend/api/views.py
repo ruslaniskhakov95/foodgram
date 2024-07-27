@@ -7,10 +7,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Tag, Ingredient, Recipe, Favorite
+from .models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
 from .serializers import (
     TagSerializer, IngredientSerializer, RecipeSerializer, FavoriteSerializer,
-    RecipeIsFavoriteSerializer
+    RecipeIsFavoriteSerializer, ShoppingCartSerializer
 )
 from .utils import CreateDestroyViewSet
 
@@ -95,6 +95,39 @@ class FavoriteViewSet(CreateDestroyViewSet):
                 Favorite, user=request.user, favorite=recipe
             )
             favorite.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class ShoppingCartViewSet(CreateDestroyViewSet):
+
+    def create(self, request, *args, **kwargs):
+        recipe_to_buy_id = kwargs.get('pk', None)
+        recipe = get_object_or_404(Recipe, id=recipe_to_buy_id)
+        if recipe_to_buy_id:
+            data = {
+                'user': request.user.id,
+                'recipe': recipe_to_buy_id
+            }
+            serializer = ShoppingCartSerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            recipe_serializer = RecipeIsFavoriteSerializer(recipe)
+            return Response(
+                recipe_serializer.data, status=status.HTTP_201_CREATED
+            )
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        recipe_to_buy_id = kwargs.get('pk', None)
+        recipe = get_object_or_404(Recipe, id=recipe_to_buy_id)
+        if recipe_to_buy_id:
+            recipe_to_buy = get_object_or_404(
+                ShoppingCart, user=request.user, recipe=recipe
+            )
+            recipe_to_buy.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
