@@ -55,3 +55,25 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
         return Response(
             {'short-link': short_link}, status=status.HTTP_200_OK
         )
+
+        try:
+            tag_list = data['tags']
+            for tag in tag_list:
+                cur_tag = get_object_or_404(Tag, id=tag)
+                tag = {
+                    'id': cur_tag.id,
+                    'name': cur_tag.name,
+                    'slug': cur_tag.slug
+                }
+            print(tag_list)
+            data['tags'] = tag_list
+        except KeyError:
+            raise serializers.ValidationError('No tag list!')
+
+    def to_representation(self, instance):
+        queryset = instance.ingredients.set().all()
+        serializer = IngredientAmountSerializer(
+            queryset, context={'recipe_id': instance.id}, many=True
+        )
+        instance.ingredients = serializer.data
+        return super().to_representation(instance)
