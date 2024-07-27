@@ -1,9 +1,19 @@
+from django.contrib.auth import get_user_model
+# from django.shortcuts import get_object_or_404
+# from django.urls import reverse
+# from shortener.models import UrlMap
+# from shortener import shortener
 from rest_framework import viewsets
+# from rest_framework.decorators import action
+# from rest_framework.response import Response
 
 from .models import Tag, Ingredient, Recipe
 from .serializers import (
     TagSerializer, IngredientSerializer, RecipeSerializer
 )
+
+
+User = get_user_model()
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

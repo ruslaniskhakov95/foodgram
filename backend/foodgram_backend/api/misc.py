@@ -24,3 +24,34 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
     def get_measurement_unit(self, obj):
         ingredient = get_object_or_404(Ingredient, id=obj.ingredient)
         return ingredient.measurement_unit
+
+
+    @action(
+        methods=['get'], detail=True, url_path='get-link'
+    )
+    def get_short_link(self, request, pk):
+        """Получение короткой ссылки на рецепт"""
+
+        recipe = get_object_or_404(Recipe, pk=pk)
+        if not recipe:
+            raise ValueError('No recipe to process')
+        protocol_host = request.scheme + '://' + request.META.get(
+            'HTTP_HOST'
+        )
+        origin_path = reverse('recipes-detail', args=(pk,))
+        origin_url = f'{protocol_host}{origin_path}'
+        if UrlMap.objects.filter(full_url=origin_url).exists():
+            existing_link = UrlMap.objects.get(full_url=origin_url)
+            short_link = f'{protocol_host}/s/{existing_link.short_url}'
+            return Response(
+                {'short-link': short_link}, status=status.HTTP_200_OK
+            )
+        if request.user.is_authenticated:
+            link = shortener.create(user=request.user, link=origin_url)
+        else:
+            admin = User.objects.filter(is_staff=True).first()
+            link = shortener.create(user=admin, link=origin_url)
+        short_link = f'{protocol_host}/s/{link.short_url}'
+        return Response(
+            {'short-link': short_link}, status=status.HTTP_200_OK
+        )

@@ -22,9 +22,13 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
     def get_amount(self, obj):
-        recipe = Recipe.objects.get(
-            name=self.context['request'].data.get('name')
-        )
+        request = self.context['request']
+        if request.method == 'GET':
+            recipe = Recipe.objects.get(id=self.context.get('recipe_id'))
+        else:
+            recipe = Recipe.objects.get(
+                name=self.context['request'].data.get('name')
+            )
         return RecipeIngredient.objects.get(
             recipe=recipe, ingredient=obj
         ).amount
@@ -38,8 +42,11 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField(required=False)
     slug = serializers.SlugField(
-        validators=[validators.UniqueValidator(queryset=Tag.objects.all())]
+        validators=[validators.UniqueValidator(queryset=Tag.objects.all())],
+        required=False
     )
 
     class Meta:
@@ -48,18 +55,27 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(required=False, read_only=True)
     author = CustomUserSerializer(default=serializers.CurrentUserDefault())
     image = Base64ImageField()
     ingredients = IngredientAmountSerializer(many=True)
-    tags = TagSerializer(many=True, read_only=False)
+    tags = TagSerializer(many=True)
     cooking_time = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = Recipe
         fields = (
-            'ingredients', 'tags', 'image', 'name',
+            'id', 'ingredients', 'tags', 'image', 'name',
             'text', 'cooking_time', 'author'
         )
+
+    def to_internal_value(self, data):
+        data['tags'] = [{'id': tag} for tag in data['tags']]
+        return super().to_internal_value(data)
+
+    def to_representation(self, instance):
+        self.context['recipe_id'] = instance.id
+        return super().to_representation(instance)
 
     def create(self, validated_data):
         if 'ingredients' not in self.initial_data:
@@ -80,7 +96,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
         for tag in tags:
             current_tag = get_object_or_404(
-                Tag, id=tag.id
+                Tag, id=tag['id']
             )
             RecipeTag.objects.create(
                 recipe=recipe, tag_id=current_tag.id
@@ -112,7 +128,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             )
         for tag in tags:
             current_tag = get_object_or_404(
-                Tag, id=tag.id
+                Tag, id=tag['id']
             )
             RecipeTag.objects.create(
                 recipe=instance, tag_id=current_tag.id

@@ -7,7 +7,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('users.urls')),
     path('api/', include('api.urls')),
-    path('s/', include('shortener.urls'))
+ #   path('s/', include('shortener.urls'))
 ]
 
 if settings.DEBUG:
