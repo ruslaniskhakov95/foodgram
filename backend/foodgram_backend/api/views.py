@@ -1,4 +1,6 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Prefetch
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from shortener.models import UrlMap
@@ -7,7 +9,9 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Tag, Ingredient, Recipe, Favorite, ShoppingCart
+from .models import (
+    Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
+)
 from .serializers import (
     TagSerializer, IngredientSerializer, RecipeSerializer, FavoriteSerializer,
     RecipeIsFavoriteSerializer, ShoppingCartSerializer
@@ -16,6 +20,8 @@ from .utils import CreateDestroyViewSet
 
 
 User = get_user_model()
+
+# permission class added direct to @action decorator (just in case)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -71,7 +77,34 @@ class RecipeViewSet(viewsets.ModelViewSet):
         url_path='download_shopping_cart'
     )
     def get_shopping_cart(self, request):
-        pass
+        user = request.user
+        queryset = ShoppingCart.objects.filter(user=user).prefetch_related(
+            Prefetch('recipe', to_attr='recipe_to_cart')
+        )
+        recipes_to_cart = [obj.recipe_to_cart for obj in queryset]
+        response = HttpResponse(content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename=shopcart.txt'
+        temp = []
+        for recipe in recipes_to_cart:
+            ingredient_set = RecipeIngredient.objects.filter(recipe=recipe)
+            for recipe_ingredient in ingredient_set:
+                flag = False
+                for c in temp:
+                    if c[0] == recipe_ingredient.ingredient.name:
+                        c[1] += recipe_ingredient.amount
+                        flag = True
+                if not flag:
+                    current_ingr = [
+                        recipe_ingredient.ingredient.name,
+                        recipe_ingredient.amount,
+                        recipe_ingredient.ingredient.measurement_unit
+                    ]
+                    temp.append(current_ingr)
+        lines = []
+        for t in temp:
+            lines.append(f'{t[0]} - {t[1]} {t[2]}.\n')
+        response.writelines(lines)
+        return response
 
 
 class FavoriteViewSet(CreateDestroyViewSet):
