@@ -6,12 +6,10 @@ from .models import (
     Tag, Ingredient, Recipe, RecipeIngredient, RecipeTag, Favorite,
     ShoppingCart
 )
-from users.serializers import Base64ImageField, CustomUserSerializer
+from users.serializers import CustomUserSerializer, Base64ImageField
 
 
 User = get_user_model()
-
-# Look whether CHOICES for measurement_units for Ingredient model are necessary
 
 
 class IngredientAmountSerializer(serializers.ModelSerializer):

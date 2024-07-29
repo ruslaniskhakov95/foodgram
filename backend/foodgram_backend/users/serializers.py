@@ -5,6 +5,7 @@ from djoser.serializers import UserSerializer
 from rest_framework import serializers, validators
 
 from .models import User, Subscribe
+from api.models import Recipe
 
 
 class Base64ImageField(serializers.ImageField):
@@ -14,6 +15,13 @@ class Base64ImageField(serializers.ImageField):
             ext = format.split('/')[-1]
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
         return super().to_internal_value(data)
+
+
+class RecipeMinified(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class CustomUserSerializer(UserSerializer):
@@ -74,3 +82,36 @@ class SubscribeSerializer(serializers.ModelSerializer):
         if self.context['request'].user == data.get('subscribing'):
             raise serializers.ValidationError('Подписываться на себя нельзя!')
         return data
+
+
+class EnlargedSubscribeUser(UserSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+    avatar = Base64ImageField(required=False, allow_null=True)
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name',
+            'last_name', 'is_subscribed', 'recipes',
+            'recipes_count', 'avatar'
+        )
+
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        subscribing = User.objects.get(username=obj.username)
+        if request and request.user.is_authenticated:
+            return Subscribe.objects.filter(
+                user=request.user.id, subscribing=subscribing
+            ).exists()
+        else:
+            return False
+
+    def get_recipes(self, obj):
+        queryset = Recipe.objects.filter(author=obj)
+        serializer = RecipeMinified(queryset, many=True)
+        return serializer.data
+
+    def get_recipes_count(self, obj):
+        return Recipe.objects.filter(author=obj).count()

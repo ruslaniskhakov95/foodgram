@@ -82,6 +82,10 @@ class Recipe(BaseModel):
         verbose_name='Время приготовления в минутах',
         validators=[MinValueValidator(1), MaxValueValidator(1440)]
     )
+    pub_date = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Дата публикации'
+    )
 
     class Meta:
         verbose_name = 'Рецепт'

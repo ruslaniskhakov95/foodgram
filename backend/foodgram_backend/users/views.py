@@ -1,12 +1,14 @@
 from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from api.utils import CreateDestroyViewSet
 from .models import User, Subscribe
-from .serializers import CustomUserSerializer, SubscribeSerializer
+from .serializers import (
+    CustomUserSerializer, SubscribeSerializer, EnlargedSubscribeUser
+)
 
 # insert permissions, pagination, search and filter classes
 
@@ -50,10 +52,11 @@ class SubscribeViewSet(CreateDestroyViewSet):
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
+    permission_classes = [permissions.AllowAny]
 
     @action(
-        methods=['get'],
-        detail=False, url_path='me'
+        methods=['get'], detail=False, url_path='me',
+        permission_classes=[permissions.IsAuthenticated]
     )
     def user_info(self, request):
         user = request.user
@@ -61,8 +64,8 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
-        methods=['put', 'delete'], detail=False,
-        url_path='me/avatar'
+        methods=['put', 'delete'], detail=False, url_path='me/avatar',
+        permission_classes=[permissions.IsAuthenticated]
     )
     def avatar(self, request):
         user = request.user
@@ -81,8 +84,8 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status_code)
 
     @action(
-        methods=['post',], detail=False,
-        url_path='set_password'
+        methods=['post',], detail=False, url_path='set_password',
+        permission_classes=[permissions.IsAuthenticated]
     )
     def set_password(self, request):
         user = request.user
@@ -96,9 +99,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             if user.check_password(current_password):
                 user.set_password(new_password)
                 user.save()
-                return Response(
-                    serializer.data, status=status.HTTP_204_NO_CONTENT
-                )
+                return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response(
                     'Неверный пароль', status=status.HTTP_401_UNAUTHORIZED
@@ -107,7 +108,8 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             raise ValueError('Пароль не может содержать пустую строку!')
 
     @action(
-        detail=False, url_path='subscriptions'
+        detail=False, url_path='subscriptions',
+        permission_classes=[permissions.IsAuthenticated]
     )
     def get_subscriptions_list(self, request):
         user = request.user
@@ -116,7 +118,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         )
         subscribed_to_users = [obj.subscribed_to_user for obj in queryset]
         if queryset:
-            serializer = CustomUserSerializer(
+            serializer = EnlargedSubscribeUser(
                 subscribed_to_users, many=True, context={'request': request}
             )
             return Response(serializer.data, status=status.HTTP_200_OK)

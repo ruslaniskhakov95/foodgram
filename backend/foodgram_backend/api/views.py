@@ -3,9 +3,10 @@ from django.db.models import Prefetch
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django_filters.rest_framework import DjangoFilterBackend
 from shortener.models import UrlMap
 from shortener import shortener
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -21,29 +22,41 @@ from .utils import CreateDestroyViewSet
 
 User = get_user_model()
 
-# permission class added direct to @action decorator (just in case)
-
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    permission_classes = [permissions.AllowAny]
+    http_method_names = ['get']
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = [permissions.AllowAny]
+    http_method_names = ['get']
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    filter_backends = [
+        DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter
+    ]
+    filterset_fields = (
+        'author', 'tags'
+    )
+    search_fields = ('name',)
+    ordering_fields = ('-pub_date',)
 
     def perform_create(self, serializer):
         serializer.is_valid(raise_exception=True)
         serializer.save(author=self.request.user)
 
     @action(
-        methods=['get'], detail=True, url_path='get-link'
+        methods=['get'], detail=True, url_path='get-link',
+        permission_classes=[permissions.AllowAny]
     )
     def get_short_link(self, request, pk):
         """Получение короткой ссылки на рецепт"""
