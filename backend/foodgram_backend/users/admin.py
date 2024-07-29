@@ -3,8 +3,13 @@ from django.contrib.auth.admin import UserAdmin
 
 from .models import User
 
-UserAdmin.fieldsets += (
+
+class FoodgramAdmin(UserAdmin):
+    search_fields = ('username', 'email')
+
+
+FoodgramAdmin.fieldsets += (
     ('Extra Fields', {'fields': ('avatar',)}),
 )
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User, FoodgramAdmin)

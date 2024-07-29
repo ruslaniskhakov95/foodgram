@@ -116,8 +116,8 @@ class RecipeIngredient(models.Model):
         ordering = ['recipe__name']
 
     def __str__(self):
-        return (f'Рецепт {self.recipe__name} - '
-                f'Ингредиент {self.ingredient__name}')
+        return (f'Рецепт "{self.recipe.name}" - '
+                f'Ингредиент "{self.ingredient.name}"')
 
 
 class RecipeTag(models.Model):
@@ -138,8 +138,8 @@ class RecipeTag(models.Model):
         ordering = ['recipe__name']
 
     def __str__(self):
-        return (f'Рецепт {self.recipe__name} - '
-                f'Тег {self.tag__name}')
+        return (f'Рецепт "{self.recipe.name}" - '
+                f'Тег "{self.tag.name}"')
 
 
 class Favorite(models.Model):
@@ -159,7 +159,11 @@ class Favorite(models.Model):
             )
         ]
         verbose_name = 'Избранное'
-        verbose_name_plural = 'Избранные'
+        verbose_name_plural = 'Избранные рецепты'
+
+    def __str__(self):
+        return (f'Пользователь {self.user.username} - '
+                f'Избранный рецепт "{self.favorite.name}"')
 
 
 class ShoppingCart(models.Model):
@@ -179,3 +183,7 @@ class ShoppingCart(models.Model):
         ]
         verbose_name = 'Покупка'
         verbose_name_plural = 'Покупки'
+
+    def __str__(self):
+        return (f'Пользователь {self.user.username} - '
+                f'Рецепт в корзине "{self.recipe.name}"')
