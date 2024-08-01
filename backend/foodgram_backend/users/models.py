@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from api.constants import MAX_NAME_LENGTH
+from api.constants import MAX_NAME_LENGTH, MAX_EMAIL_LENGTH
 from api.validators import username_validator
 
 
@@ -27,7 +27,7 @@ class User(AbstractUser):
     )
     email = models.EmailField(
         unique=True,
-        max_length=MAX_NAME_LENGTH,
+        max_length=MAX_EMAIL_LENGTH,
         verbose_name='Адрес электронной почты'
     )
     avatar = models.ImageField(

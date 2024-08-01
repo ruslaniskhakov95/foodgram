@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
+from django.db.utils import IntegrityError
 from rest_framework import serializers, validators
 
 from .models import (
@@ -30,9 +30,12 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
             recipe = Recipe.objects.get(
                 name=self.context['request'].data.get('name')
             )
-        return RecipeIngredient.objects.get(
+        amount = RecipeIngredient.objects.get(
             recipe=recipe, ingredient=obj
         ).amount
+        if amount < 1:
+            raise serializers.ValidationError('Amount should be >= 1!')
+        return amount
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -99,29 +102,45 @@ class RecipeSerializer(serializers.ModelSerializer):
         return super().to_representation(instance)
 
     def create(self, validated_data):
-        if 'ingredients' not in self.initial_data:
-            raise serializers.ValidationError('No ingredients in recipe!')
-        if 'tags' not in self.initial_data:
-            raise serializers.ValidationError('No tags assigned!')
         ingredients = validated_data.pop('ingredients')
         ingredients = self.initial_data.get('ingredients')
+        if not ingredients:
+            raise serializers.ValidationError(
+                'Recipe MUST contain at least one ingredient!'
+            )
         tags = validated_data.pop('tags')
         recipe = Recipe.objects.create(**validated_data)
         for ingredient in ingredients:
-            current_ingredient = get_object_or_404(
-                Ingredient, id=ingredient.get('id')
-            )
-            RecipeIngredient.objects.create(
-                recipe_id=recipe.id, ingredient_id=current_ingredient.id,
-                amount=ingredient.get('amount')
-            )
+            try:
+                current_ingredient = Ingredient.objects.get(
+                    id=ingredient.get('id')
+                )
+            except Ingredient.DoesNotExist:
+                raise serializers.ValidationError(
+                    'There is no such ingredient!'
+                )
+            try:
+                RecipeIngredient.objects.create(
+                    recipe_id=recipe.id, ingredient_id=current_ingredient.id,
+                    amount=ingredient.get('amount')
+                )
+            except IntegrityError:
+                raise serializers.ValidationError(
+                    'You cannot use one ingredient twice!'
+                )
         for tag in tags:
-            current_tag = get_object_or_404(
-                Tag, id=tag['id']
-            )
-            RecipeTag.objects.create(
-                recipe=recipe, tag_id=current_tag.id
-            )
+            try:
+                current_tag = Tag.objects.get(id=tag.get('id'))
+            except Tag.DoesNotExist:
+                raise serializers.ValidationError('Tag does not exist')
+            try:
+                RecipeTag.objects.create(
+                    recipe=recipe, tag_id=current_tag.id
+                )
+            except IntegrityError:
+                raise serializers.ValidationError(
+                    'You cannot use this tag twice!'
+                )
         return recipe
 
     def update(self, instance, validated_data):
@@ -140,20 +159,35 @@ class RecipeSerializer(serializers.ModelSerializer):
         to_del.delete()
         ingredients = self.initial_data.get('ingredients')
         for ingredient in ingredients:
-            current_ingredient = get_object_or_404(
-                Ingredient, id=ingredient.get('id')
-            )
-            RecipeIngredient.objects.create(
-                recipe_id=instance.id, ingredient_id=current_ingredient.id,
-                amount=ingredient.get('amount')
-            )
+            try:
+                current_ingredient = Ingredient.objects.get(
+                    id=ingredient.get('id')
+                )
+            except Ingredient.DoesNotExist:
+                raise serializers.ValidationError('No such ingredient')
+            try:
+                RecipeIngredient.objects.create(
+                    recipe_id=instance.id,
+                    ingredient_id=current_ingredient.id,
+                    amount=ingredient.get('amount')
+                )
+            except IntegrityError:
+                raise serializers.ValidationError(
+                    'You cannot use one ingredient twice!'
+                )
         for tag in tags:
-            current_tag = get_object_or_404(
-                Tag, id=tag['id']
-            )
-            RecipeTag.objects.create(
-                recipe=instance, tag_id=current_tag.id
-            )
+            try:
+                current_tag = Tag.objects.get(id=tag['id'])
+            except Tag.DoesNotExist:
+                raise serializers.ValidationError('No such Tag!')
+            try:
+                RecipeTag.objects.create(
+                    recipe=instance, tag_id=current_tag.id
+                )
+            except IntegrityError:
+                raise serializers.ValidationError(
+                    'You cannot use this tag twice!'
+                )
         return instance
 
 

@@ -4,15 +4,17 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
-from shortener.models import UrlMap
-from shortener import shortener
 from rest_framework import viewsets, status, permissions, filters
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
+from shortener.models import UrlMap
+from shortener import shortener
 
 from .models import (
     Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
 )
+from .permissions import IsAuthorOrReadOnly
 from .serializers import (
     TagSerializer, IngredientSerializer, RecipeSerializer, FavoriteSerializer,
     RecipeIsFavoriteSerializer, ShoppingCartSerializer
@@ -27,6 +29,10 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = [permissions.AllowAny]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ('name',)
+    search_fields = ('name',)
+    pagination_class = None
     http_method_names = ['get']
 
 
@@ -34,25 +40,59 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     permission_classes = [permissions.AllowAny]
+    pagination_class = None
     http_method_names = ['get']
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthorOrReadOnly]
+    pagination_class = LimitOffsetPagination
     filter_backends = [
         DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter
     ]
     filterset_fields = (
-        'author', 'tags'
+        'author', 'tags__slug'
     )
-    search_fields = ('name',)
+    search_fields = ('^name', 'tags__slug')
     ordering_fields = ('-pub_date',)
 
-    def perform_create(self, serializer):
+    def get_queryset(self):
+        user = self.request.user
+        is_in_shopping_cart = self.request.query_params.get(
+            'is_in_shopping_cart'
+        )
+        if is_in_shopping_cart == 1 and user.is_authenticated:
+            queryset = ShoppingCart.objects.filter(
+                user=user
+            ).prefetch_related(Prefetch('recipe', to_attr='recipe_in_cart'))
+            return [obj.recipe_in_cart for obj in queryset]
+        return Recipe.objects.all()
+
+    def create(self, request):
+        tags = request.data.get('tags', None)
+        ingredients = request.data.get('ingredients', None)
+        if not tags or not ingredients:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        serializer = RecipeSerializer(
+            data=request.data, context={'request': request}
+        )
         serializer.is_valid(raise_exception=True)
-        serializer.save(author=self.request.user)
+        serializer.save(author=request.user)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, pk):
+        tags = request.data.get('tags')
+        ingredients = request.data.get('ingredients')
+        if not tags or not ingredients:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        recipe = get_object_or_404(Recipe, id=pk)
+        serializer = RecipeSerializer(
+            recipe, data=request.data, context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['get'], detail=True, url_path='get-link',
@@ -86,8 +126,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     @action(
-        methods=['get'], detail=False,
-        url_path='download_shopping_cart'
+        methods=['get'], detail=False, url_path='download_shopping_cart',
+        permission_classes=[permissions.IsAuthenticated]
     )
     def get_shopping_cart(self, request):
         user = request.user
@@ -125,32 +165,29 @@ class FavoriteViewSet(CreateDestroyViewSet):
     def create(self, request, *args, **kwargs):
         favorite_id = kwargs.get('pk', None)
         recipe = get_object_or_404(Recipe, id=favorite_id)
-        if favorite_id:
-            data = {
-                'user': request.user.id,
-                'favorite': favorite_id
-            }
-            serializer = FavoriteSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            recipe_serializer = RecipeIsFavoriteSerializer(recipe)
-            return Response(
-                recipe_serializer.data, status=status.HTTP_201_CREATED
-            )
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        data = {
+            'user': request.user.id,
+            'favorite': favorite_id
+        }
+        serializer = FavoriteSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        recipe_serializer = RecipeIsFavoriteSerializer(recipe)
+        return Response(
+            recipe_serializer.data, status=status.HTTP_201_CREATED
+        )
 
     def destroy(self, request, *args, **kwargs):
         favorite_id = kwargs.get('pk', None)
         recipe = get_object_or_404(Recipe, id=favorite_id)
-        if favorite_id:
-            favorite = get_object_or_404(
-                Favorite, user=request.user, favorite=recipe
+        try:
+            favorite = Favorite.objects.get(
+                user=request.user, favorite=recipe
             )
-            favorite.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
+        except Favorite.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        favorite.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ShoppingCartViewSet(CreateDestroyViewSet):
@@ -158,29 +195,26 @@ class ShoppingCartViewSet(CreateDestroyViewSet):
     def create(self, request, *args, **kwargs):
         recipe_to_buy_id = kwargs.get('pk', None)
         recipe = get_object_or_404(Recipe, id=recipe_to_buy_id)
-        if recipe_to_buy_id:
-            data = {
-                'user': request.user.id,
-                'recipe': recipe_to_buy_id
-            }
-            serializer = ShoppingCartSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            recipe_serializer = RecipeIsFavoriteSerializer(recipe)
-            return Response(
-                recipe_serializer.data, status=status.HTTP_201_CREATED
-            )
-        else:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+        data = {
+            'user': request.user.id,
+            'recipe': recipe_to_buy_id
+        }
+        serializer = ShoppingCartSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        recipe_serializer = RecipeIsFavoriteSerializer(recipe)
+        return Response(
+            recipe_serializer.data, status=status.HTTP_201_CREATED
+        )
 
     def destroy(self, request, *args, **kwargs):
         recipe_to_buy_id = kwargs.get('pk', None)
         recipe = get_object_or_404(Recipe, id=recipe_to_buy_id)
-        if recipe_to_buy_id:
-            recipe_to_buy = get_object_or_404(
-                ShoppingCart, user=request.user, recipe=recipe
+        try:
+            recipe_to_buy = ShoppingCart.objects.get(
+                user=request.user, recipe=recipe
             )
-            recipe_to_buy.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        else:
+        except ShoppingCart.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+        recipe_to_buy.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

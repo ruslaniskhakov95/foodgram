@@ -2,7 +2,9 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 
-from api.constants import MAX_NAME_LENGTH, MAX_SLUG_LENGTH, LIMIT_TEXT
+from api.constants import (
+    MAX_NAME_LENGTH, MAX_SLUG_LENGTH, LIMIT_TEXT
+)
 
 
 User = get_user_model()
@@ -118,6 +120,11 @@ class RecipeIngredient(models.Model):
         verbose_name = 'Рецепт - ингредиент'
         verbose_name_plural = 'Рецепт - ингредиент'
         ordering = ['recipe__name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=('recipe', 'ingredient'), name='recipe_ingr_unique'
+            )
+        ]
 
     def __str__(self):
         return (f'Рецепт "{self.recipe.name}" - '
@@ -140,6 +147,11 @@ class RecipeTag(models.Model):
         verbose_name = 'Рецепт - Тег'
         verbose_name_plural = 'Рецепт - Тег'
         ordering = ['recipe__name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=('recipe', 'tag'), name='recipe_tag_unique'
+            )
+        ]
 
     def __str__(self):
         return (f'Рецепт "{self.recipe.name}" - '

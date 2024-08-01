@@ -82,3 +82,14 @@ class IngredientAmountSerializer(serializers.ModelSerializer):
 #    r'users/(?P<subscribing_id>\d+)/subscribe', SubscribeViewSet,
 #    basename='subscribe'
 # )
+
+    def partial_update(self, request, pk):
+        tags = request.data.get('tags')
+        ingredients = request.data('ingredients')
+        if not tags or not ingredients:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        recipe = Recipe.objects.get(id=pk)
+        serializer = RecipeSerializer(recipe, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

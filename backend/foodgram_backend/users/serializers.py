@@ -24,6 +24,25 @@ class RecipeMinified(serializers.ModelSerializer):
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
+class CreateUserSerializer(UserSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True
+    )
+
+    class Meta:
+        model = User
+        fields = (
+            'email', 'id', 'username', 'first_name', 'last_name', 'password'
+        )
+
+    def create(self, validated_data):
+        user = super().create(validated_data)
+        user.set_password(validated_data.get('password'))
+        user.save()
+        return user
+
+
 class CustomUserSerializer(UserSerializer):
     password = serializers.CharField(
         write_only=True,
@@ -38,12 +57,6 @@ class CustomUserSerializer(UserSerializer):
             'email', 'id', 'username', 'first_name',
             'last_name', 'is_subscribed', 'avatar', 'password'
         )
-
-    def create(self, validated_data):
-        user = super().create(validated_data)
-        user.set_password(validated_data.get('password'))
-        user.save()
-        return user
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
