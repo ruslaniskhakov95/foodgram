@@ -1,4 +1,3 @@
-from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
@@ -14,6 +13,7 @@ from .serializers import (
 
 
 class SubscribeViewSet(CreateDestroyViewSet):
+    pagination_class = LimitOffsetPagination
 
     def create(self, request, *args, **kwargs):
         subscribe_to_id = kwargs.get('pk', None)
@@ -125,22 +125,22 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated],
         pagination_class=LimitOffsetPagination
     )
-    def get_subscriptions_list(self, request):
+    def get_subscriptions_list(self, request, *args, **kwargs):
         user = request.user
-        queryset = Subscribe.objects.filter(user=user).prefetch_related(
-            Prefetch('subscribing', to_attr='subscribed_to_user')
-        )
-        subscribed_to_users = [obj.subscribed_to_user for obj in queryset]
-        page = self.paginate_queryset(subscribed_to_users)
+        paginator = self.pagination_class()
+        queryset = User.objects.filter(Subscribing__user=user)
+        if not queryset:
+            raise ValueError(
+                    'Текущий пользователь ни на кого не подписан!'
+                )
+        page = paginator.paginate_queryset(queryset, request)
         if page is not None:
             serializer = EnlargedSubscribeUser(
-                subscribed_to_users, many=True, context={'request': request}
+                page, many=True, context={'request': request}
             )
-            return self.get_paginated_response(serializer.data)
-        if queryset:
+            return paginator.get_paginated_response(serializer.data)
+        else:
             serializer = EnlargedSubscribeUser(
-                subscribed_to_users, many=True, context={'request': request}
+                queryset, many=True, context={'request': request}
             )
             return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            raise ValueError('Текущий пользователь ни на кого не подписан!')

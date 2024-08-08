@@ -136,11 +136,13 @@ class RecipeTag(models.Model):
         Recipe,
         on_delete=models.CASCADE,
         verbose_name='Название рецепта',
+        related_name='recipe_tag'
     )
     tag = models.ForeignKey(
         Tag,
         on_delete=models.CASCADE,
-        verbose_name='Тег'
+        verbose_name='Тег',
+        related_name='tag_for_recipe'
     )
 
     class Meta:

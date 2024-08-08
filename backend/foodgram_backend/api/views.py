@@ -19,7 +19,7 @@ from .serializers import (
     TagSerializer, IngredientSerializer, RecipeSerializer, FavoriteSerializer,
     RecipeIsFavoriteSerializer, ShoppingCartSerializer
 )
-from .utils import CreateDestroyViewSet
+from .utils import CreateDestroyViewSet, RecipeFilter
 
 
 User = get_user_model()
@@ -51,9 +51,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = [
         DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter
     ]
-    filterset_fields = (
-        'author', 'tags__slug'
-    )
+    filterset_class = RecipeFilter
     search_fields = ('^name', 'tags__slug')
     ordering_fields = ('-pub_date',)
 
@@ -62,12 +60,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
         is_in_shopping_cart = self.request.query_params.get(
             'is_in_shopping_cart'
         )
-        if is_in_shopping_cart == 1 and user.is_authenticated:
-            queryset = ShoppingCart.objects.filter(
-                user=user
-            ).prefetch_related(Prefetch('recipe', to_attr='recipe_in_cart'))
-            return [obj.recipe_in_cart for obj in queryset]
-        return Recipe.objects.all()
+        is_favorited = self.request.query_params.get(
+            'is_favorited'
+        )
+        queryset = Recipe.objects.all()
+        if is_in_shopping_cart and user.is_authenticated:
+            queryset = Recipe.objects.filter(recipe__user=user)
+        if is_favorited and user.is_authenticated:
+            queryset = Recipe.objects.filter(favorite__user=user)
+        return queryset
 
     def create(self, request):
         tags = request.data.get('tags', None)
@@ -87,6 +88,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if not tags or not ingredients:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         recipe = get_object_or_404(Recipe, id=pk)
+        if recipe.author != request.user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = RecipeSerializer(
             recipe, data=request.data, context={'request': request}
         )

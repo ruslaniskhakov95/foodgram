@@ -6,6 +6,7 @@ from rest_framework import serializers, validators
 
 from .models import User, Subscribe
 from api.models import Recipe
+from api.pagination import RecipeLimitOffset
 
 
 class Base64ImageField(serializers.ImageField):
@@ -122,8 +123,15 @@ class EnlargedSubscribeUser(UserSerializer):
             return False
 
     def get_recipes(self, obj):
+        request = self.context.get('request')
+        print(request)
         queryset = Recipe.objects.filter(author=obj)
-        serializer = RecipeMinified(queryset, many=True)
+        paginator = RecipeLimitOffset()
+        page = paginator.paginate_queryset(queryset, request)
+        if page is not None:
+            serializer = RecipeMinified(page, many=True)
+        else:
+            serializer = RecipeMinified(queryset, many=True)
         return serializer.data
 
     def get_recipes_count(self, obj):
