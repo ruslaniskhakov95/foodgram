@@ -1,6 +1,10 @@
 version: '3.3'
 services:
-
+  backend:
+    build: ../backend/foodgram_backend/
+    container_name: foodgram-back
+    ports:
+      - "8000:8000"
   frontend:
     container_name: foodgram-front
     build: ../frontend

@@ -10,7 +10,10 @@ SECRET_KEY = 'django-insecure-)-p*ezgr(3@4y!)a05yl%ekp-s9s9bbwejno#2adh+%%j-6th7
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = [
+    'localhost', '127.0.0.1', 'iskhakov-foodgram24.zapto.org',
+    '158.160.27.182'
+]
 
 
 # Application definition
@@ -138,6 +141,6 @@ DJOSER = {
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
-] 
+]
 
 CORS_URLS_REGEX = r'^/api/.*$'
