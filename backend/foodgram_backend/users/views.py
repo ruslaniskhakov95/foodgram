@@ -34,7 +34,7 @@ class SubscribeViewSet(CreateDestroyViewSet):
             response_serializer.data, status=status.HTTP_201_CREATED
         )
 
-    def destroy(self, request,  *args, **kwargs):
+    def destroy(self, request, *args, **kwargs):
         subscribing_id = kwargs.get('pk', None)
         subscribing = get_object_or_404(User, id=subscribing_id)
         try:
@@ -97,7 +97,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return None
 
     @action(
-        methods=['post',], detail=False, url_path='set_password',
+        methods=['post'], detail=False, url_path='set_password',
         permission_classes=[permissions.IsAuthenticated]
     )
     def set_password(self, request):
@@ -131,8 +131,8 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         queryset = User.objects.filter(Subscribing__user=user)
         if not queryset:
             raise ValueError(
-                    'Текущий пользователь ни на кого не подписан!'
-                )
+                'Текущий пользователь ни на кого не подписан!'
+            )
         page = paginator.paginate_queryset(queryset, request)
         if page is not None:
             serializer = EnlargedSubscribeUser(
