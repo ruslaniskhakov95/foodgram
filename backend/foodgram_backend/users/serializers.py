@@ -124,7 +124,6 @@ class EnlargedSubscribeUser(UserSerializer):
 
     def get_recipes(self, obj):
         request = self.context.get('request')
-        print(request)
         queryset = Recipe.objects.filter(author=obj)
         paginator = RecipeLimitOffset()
         page = paginator.paginate_queryset(queryset, request)
