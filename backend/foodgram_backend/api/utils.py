@@ -17,7 +17,6 @@ class RecipeFilter(filterset.FilterSet):
     tags = filters.ModelMultipleChoiceFilter(
         field_name='tags__slug',
         to_field_name='slug',
-        conjoined=True,
         queryset=Tag.objects.all()
     )
 

@@ -6,7 +6,6 @@ from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, permissions, filters
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from shortener.models import UrlMap
 from shortener import shortener
@@ -14,6 +13,7 @@ from shortener import shortener
 from .models import (
     Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
 )
+from .pagination import RecipePageNumberPagination
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (
     TagSerializer, IngredientSerializer, RecipeSerializer, FavoriteSerializer,
@@ -47,7 +47,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
-    pagination_class = LimitOffsetPagination
+    pagination_class = RecipePageNumberPagination
     filter_backends = [
         DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter
     ]

@@ -6,3 +6,7 @@ class RecipeLimitOffset(pagination.LimitOffsetPagination):
     limit_query_param = 'recipe_limit'
     offset_query_param = 'recipe_offset'
     max_limit = 100
+
+
+class RecipePageNumberPagination(pagination.PageNumberPagination):
+    page_size_query_param = 'limit'
