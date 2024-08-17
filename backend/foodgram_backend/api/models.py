@@ -1,16 +1,10 @@
-from django.db import models
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models
 
-from api.constants import (
-    MAX_NAME_LENGTH, MAX_SLUG_LENGTH, LIMIT_TEXT
-)
-
+from api.constants import LIMIT_TEXT, MAX_NAME_LENGTH, MAX_SLUG_LENGTH
 
 User = get_user_model()
-
-
-# Decide whether purchase unique together constraint is necessary
 
 
 class BaseModel(models.Model):

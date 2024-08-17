@@ -4,23 +4,20 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets, status, permissions, filters
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from shortener.models import UrlMap
 from shortener import shortener
+from shortener.models import UrlMap
 
-from .models import (
-    Tag, Ingredient, Recipe, Favorite, ShoppingCart, RecipeIngredient
-)
+from .models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                     ShoppingCart, Tag)
 from .pagination import RecipePageNumberPagination
 from .permissions import IsAuthorOrReadOnly
-from .serializers import (
-    TagSerializer, IngredientSerializer, RecipeSerializer, FavoriteSerializer,
-    RecipeIsFavoriteSerializer, ShoppingCartSerializer
-)
+from .serializers import (FavoriteSerializer, IngredientSerializer,
+                          RecipeIsFavoriteSerializer, RecipeSerializer,
+                          ShoppingCartSerializer, TagSerializer)
 from .utils import CreateDestroyViewSet, RecipeFilter
-
 
 User = get_user_model()
 

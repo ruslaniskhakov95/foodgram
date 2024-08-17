@@ -1,8 +1,7 @@
+from api.constants import MAX_EMAIL_LENGTH, MAX_NAME_LENGTH
+from api.validators import username_validator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
-from api.constants import MAX_NAME_LENGTH, MAX_EMAIL_LENGTH
-from api.validators import username_validator
 
 
 class User(AbstractUser):

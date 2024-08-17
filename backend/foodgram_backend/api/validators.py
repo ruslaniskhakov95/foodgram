@@ -1,6 +1,7 @@
 import re
+
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 validate_min_time = [MinValueValidator(1)]
 validate_max_time = [MaxValueValidator(1440)]

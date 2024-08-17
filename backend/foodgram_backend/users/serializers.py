@@ -1,12 +1,12 @@
 import base64
 
+from api.models import Recipe
+from api.pagination import RecipeLimitOffset
 from django.core.files.base import ContentFile
 from djoser.serializers import UserSerializer
 from rest_framework import serializers, validators
 
-from .models import User, Subscribe
-from api.models import Recipe
-from api.pagination import RecipeLimitOffset
+from .models import Subscribe, User
 
 
 class Base64ImageField(serializers.ImageField):

@@ -1,15 +1,13 @@
+from api.utils import CreateDestroyViewSet
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets, status, permissions
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
-from api.utils import CreateDestroyViewSet
-from .models import User, Subscribe
-from .serializers import (
-    CustomUserSerializer, CreateUserSerializer,
-    SubscribeSerializer, EnlargedSubscribeUser
-)
+from .models import Subscribe, User
+from .serializers import (CreateUserSerializer, CustomUserSerializer,
+                          EnlargedSubscribeUser, SubscribeSerializer)
 
 
 class SubscribeViewSet(CreateDestroyViewSet):
