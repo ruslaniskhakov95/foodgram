@@ -17,7 +17,7 @@ from .permissions import IsAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, IngredientSerializer,
                           RecipeIsFavoriteSerializer, RecipeSerializer,
                           ShoppingCartSerializer, TagSerializer)
-from .utils import CreateDestroyViewSet, RecipeFilter
+from .utils import CreateDestroyViewSet, IngredientFilter, RecipeFilter
 
 User = get_user_model()
 
@@ -27,7 +27,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = IngredientSerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ('name',)
+    filterset_class = IngredientFilter
     search_fields = ('name',)
     pagination_class = None
     http_method_names = ['get']

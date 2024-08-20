@@ -98,6 +98,15 @@ class RecipeSerializer(serializers.ModelSerializer):
         self.context['recipe_id'] = instance.id
         return super().to_representation(instance)
 
+    def validate(self, data):
+        ingredients = self.initial_data.get('ingredients')
+        for ingredient in ingredients:
+            if int(ingredient['amount']) < 1:
+                raise serializers.ValidationError(
+                    'Cannot use ingr with amount < 1!'
+                )
+        return data
+
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         ingredients = self.initial_data.get('ingredients')

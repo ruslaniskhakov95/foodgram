@@ -71,4 +71,4 @@ class Subscribe(models.Model):
         verbose_name_plural = 'Подписки'
 
     def __str__(self):
-        return self.subscribing
+        return f'{self.user} подписан на {self.subscribing}'

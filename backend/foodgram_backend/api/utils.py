@@ -1,7 +1,7 @@
 from django_filters import filters, filterset
 from rest_framework import mixins, viewsets
 
-from .models import Recipe, Tag
+from .models import Ingredient, Recipe, Tag
 
 
 class CreateDestroyViewSet(
@@ -23,3 +23,13 @@ class RecipeFilter(filterset.FilterSet):
     class Meta:
         model = Recipe
         fields = ['author', 'tags']
+
+
+class IngredientFilter(filterset.FilterSet):
+    name = filters.CharFilter(
+        field_name='name', lookup_expr='istartswith'
+    )
+
+    class Meta:
+        model = Ingredient
+        fields = ['name']

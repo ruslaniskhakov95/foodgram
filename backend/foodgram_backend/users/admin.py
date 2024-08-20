@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import User
+from .models import Subscribe, User
 
 
 class FoodgramAdmin(UserAdmin):
@@ -13,3 +13,4 @@ FoodgramAdmin.fieldsets += (
 )
 
 admin.site.register(User, FoodgramAdmin)
+admin.site.register(Subscribe)
