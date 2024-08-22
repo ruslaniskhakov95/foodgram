@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
-from api.constants import LIMIT_TEXT, MAX_NAME_LENGTH, MAX_SLUG_LENGTH
+from api.constants import (LIMIT_TEXT, MAX_NAME_LENGTH, MAX_SLUG_LENGTH,
+                           MAX_VALUE, MIN_VALUE)
 
 User = get_user_model()
 
@@ -76,7 +77,9 @@ class Recipe(BaseModel):
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления в минутах',
-        validators=[MinValueValidator(1), MaxValueValidator(1440)]
+        validators=[
+            MinValueValidator(MIN_VALUE), MaxValueValidator(MAX_VALUE)
+        ]
     )
     pub_date = models.DateTimeField(
         auto_now_add=True,
@@ -107,7 +110,7 @@ class RecipeIngredient(models.Model):
     )
     amount = models.IntegerField(
         verbose_name='Количество',
-        validators=[MinValueValidator(1)]
+        validators=[MinValueValidator(MIN_VALUE)]
     )
 
     class Meta:
@@ -181,6 +184,7 @@ class Favorite(models.Model):
 class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='buyer',
+        verbose_name='Пользователь'
     )
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, related_name='recipe',

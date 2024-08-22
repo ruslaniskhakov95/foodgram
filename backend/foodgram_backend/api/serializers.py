@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.db.utils import IntegrityError
 from rest_framework import serializers, validators
-from users.serializers import Base64ImageField, CustomUserSerializer
 
 from .models import (Favorite, Ingredient, Recipe, RecipeIngredient, RecipeTag,
                      ShoppingCart, Tag)
+from users.serializers import Base64ImageField, CustomUserSerializer
 
 User = get_user_model()
 

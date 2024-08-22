@@ -1,7 +1,9 @@
-from api.constants import MAX_EMAIL_LENGTH, MAX_NAME_LENGTH
-from api.validators import username_validator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import CheckConstraint, F, Q, UniqueConstraint
+
+from api.constants import MAX_EMAIL_LENGTH, MAX_NAME_LENGTH
+from api.validators import username_validator
 
 
 class User(AbstractUser):
@@ -63,8 +65,11 @@ class Subscribe(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
+            UniqueConstraint(
                 fields=('user', 'subscribing'), name='unique_user_subscribing'
+            ),
+            CheckConstraint(
+                check=~Q(user=F('subscribing')), name='prevent_self_subscribe'
             )
         ]
         verbose_name = 'Подписка'

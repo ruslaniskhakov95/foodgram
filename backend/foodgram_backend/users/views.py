@@ -1,4 +1,3 @@
-from api.utils import CreateDestroyViewSet
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -7,7 +6,8 @@ from rest_framework.response import Response
 
 from .models import Subscribe, User
 from .serializers import (CreateUserSerializer, CustomUserSerializer,
-                          EnlargedSubscribeUser, SubscribeSerializer)
+                          ExtendedSubscribeUser, SubscribeSerializer)
+from api.utils import CreateDestroyViewSet
 
 
 class SubscribeViewSet(CreateDestroyViewSet):
@@ -25,7 +25,7 @@ class SubscribeViewSet(CreateDestroyViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        response_serializer = EnlargedSubscribeUser(
+        response_serializer = ExtendedSubscribeUser(
             subscribing, context={'request': request}
         )
         return Response(
@@ -133,12 +133,12 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             )
         page = paginator.paginate_queryset(queryset, request)
         if page is not None:
-            serializer = EnlargedSubscribeUser(
+            serializer = ExtendedSubscribeUser(
                 page, many=True, context={'request': request}
             )
             return paginator.get_paginated_response(serializer.data)
         else:
-            serializer = EnlargedSubscribeUser(
+            serializer = ExtendedSubscribeUser(
                 queryset, many=True, context={'request': request}
             )
             return Response(serializer.data, status=status.HTTP_200_OK)

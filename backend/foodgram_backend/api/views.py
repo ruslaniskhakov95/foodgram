@@ -125,16 +125,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             {'short-link': short_link}, status=status.HTTP_200_OK
         )
 
-    @action(
-        methods=['get'], detail=False, url_path='download_shopping_cart',
-        permission_classes=[permissions.IsAuthenticated]
-    )
-    def get_shopping_cart(self, request):
-        user = request.user
-        queryset = ShoppingCart.objects.filter(user=user).prefetch_related(
-            Prefetch('recipe', to_attr='recipe_to_cart')
-        )
-        recipes_to_cart = [obj.recipe_to_cart for obj in queryset]
+    def generate_recipe_file(self, recipes_to_cart):
         response = HttpResponse(content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename=shopcart.txt'
         temp = []
@@ -158,6 +149,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
             lines.append(f'{t[0]} - {t[1]} {t[2]}.\n')
         response.writelines(lines)
         return response
+
+    @action(
+        methods=['get'], detail=False, url_path='download_shopping_cart',
+        permission_classes=[permissions.IsAuthenticated]
+    )
+    def get_shopping_cart(self, request):
+        user = request.user
+        queryset = ShoppingCart.objects.filter(user=user).prefetch_related(
+            Prefetch('recipe', to_attr='recipe_to_cart')
+        )
+        recipes_to_cart = [obj.recipe_to_cart for obj in queryset]
+        return self.generate_recipe_file(recipes_to_cart)
 
 
 class FavoriteViewSet(CreateDestroyViewSet):
