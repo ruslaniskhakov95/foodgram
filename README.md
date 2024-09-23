@@ -21,6 +21,11 @@ pip install -r requirements.txt
 python3 manage.py migrate
 ```
 
+Локальный запуск:
+```
+python3 manage.py runserver
+```
+
 ## Технологии
 
 Использованные технологии:
