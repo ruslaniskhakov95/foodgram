@@ -26,6 +26,12 @@ python3 manage.py migrate
 python3 manage.py runserver
 ```
 
+## Запуск на удаленном сервере:
+Скачайте/скопируйте файл dcoker-compose.production.yml
+Заполните файл .env (требуются переменные: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, DB_HOST, DB_PORT, SECRET_KEY, HOST_IP, HOST_DOMAIN)
+Настройте внешний nginx на проксирование запросов к домену foodgram на порт 80 контейнера.
+Создайте Docker compose.
+
 ## Технологии
 
 Использованные технологии:
